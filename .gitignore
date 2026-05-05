@@ -1,0 +1,10 @@
+/target/
+/src/main/webapp/WEB-INF/classes/
+*.class
+.settings/
+.project
+.classpath
+.DS_Store
+cookies.txt
+/lib/servlet-api.jar
+/lib/jsp-api.jar
