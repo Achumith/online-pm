@@ -24,25 +24,20 @@
             </header>
 
             <div class="page-content">
-                <div class="page-header">
-                    <div>
-                        <h1>Tasks</h1>
-                        <p>Track your assignments and team responsibilities.</p>
-                    </div>
-                </div>
-
                 <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">All Tasks</h3>
+                    </div>
                     <div class="table-wrap">
                         <table>
                             <thead>
                                 <tr>
                                     <th>Task</th>
                                     <th>Project</th>
-                                    <th>Assignee</th>
-                                    <th>Priority</th>
                                     <th>Status</th>
-                                    <th>Due Date</th>
-                                    <th>Action</th>
+                                    <th>Priority</th>
+                                    <th>Deadline</th>
+                                    <th class="text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -53,26 +48,28 @@
                                 <tr>
                                     <td>
                                         <div class="fw-600"><%= t.getTitle() %></div>
-                                        <div class="text-sm text-muted">ID: #<%= t.getId() %></div>
+                                        <div class="text-xs text-muted">👤 <%= t.getAssigneeName() %></div>
                                     </td>
-                                    <td><a href="<%= request.getContextPath() %>/projects?action=view&id=<%= t.getProjectId() %>" class="text-sm"><%= t.getProjectTitle() %></a></td>
-                                    <td>
-                                        <div class="flex items-center gap-2">
-                                            <div class="avatar sm"><%= t.getAssigneeName() != null ? t.getAssigneeName().substring(0,1) : "?" %></div>
-                                            <span class="text-sm"><%= t.getAssigneeName() %></span>
-                                        </div>
-                                    </td>
-                                    <td><span class="badge badge-<%= t.getPriority().toLowerCase() %>"><%= t.getPriority() %></span></td>
-                                    <td><span class="badge badge-<%= t.getStatus().toLowerCase().replace(" ", "_") %>"><%= t.getStatus() %></span></td>
+                                    <td><div class="text-sm"><%= t.getProjectTitle() %></div></td>
+                                    <td><span class="badge badge-<%= t.getStatus() != null ? t.getStatus().toLowerCase().replace(" ", "_") : "todo" %>"><%= t.getStatus() %></span></td>
+                                    <td><span class="badge badge-<%= t.getPriority() != null ? t.getPriority().toLowerCase() : "medium" %>"><%= t.getPriority() %></span></td>
                                     <td class="text-sm"><%= t.getEndDate() %></td>
-                                    <td>
-                                        <a href="<%= request.getContextPath() %>/tasks?action=edit&id=<%= t.getId() %>" class="btn btn-secondary btn-xs">Edit</a>
+                                    <td class="text-right">
+                                        <div class="flex gap-2" style="justify-content: flex-end;">
+                                            <a href="<%= request.getContextPath() %>/tasks?action=edit&id=<%= t.getId() %>" class="btn btn-secondary btn-xs">Edit</a>
+                                            <form action="<%= request.getContextPath() %>/tasks" method="POST" onsubmit="return confirm('Delete this task?')" style="display:inline">
+                                                <input type="hidden" name="action" value="delete">
+                                                <input type="hidden" name="id" value="<%= t.getId() %>">
+                                                <button type="submit" class="btn btn-outline btn-xs" style="color:var(--danger); border-color:var(--danger)">Delete</button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                                 <% 
                                     }
-                                } else { %>
-                                <tr><td colspan="7" class="text-center text-muted">No tasks found</td></tr>
+                                } else { 
+                                %>
+                                <tr><td colspan="6" class="text-center text-muted py-5">No tasks found. Create one to get started!</td></tr>
                                 <% } %>
                             </tbody>
                         </table>

@@ -44,23 +44,24 @@
                     %>
                     <a href="<%= request.getContextPath() %>/projects?action=view&id=<%= p.getId() %>" class="project-card">
                         <div class="project-card-header">
-                            <span class="badge badge-<%= p.getStatus().toLowerCase().replace(" ", "_") %>"><%= p.getStatus() %></span>
+                            <span class="badge badge-<%= p.getStatus() != null ? p.getStatus().toLowerCase().replace(" ", "_") : "unknown" %>"><%= p.getStatus() %></span>
                             <div class="text-sm text-muted">ID: #<%= p.getId() %></div>
                         </div>
                         <h3 class="project-title"><%= p.getTitle() %></h3>
-                        <p class="project-desc"><%= p.getDescription() != null && p.getDescription().length() > 80 ? p.getDescription().substring(0, 77) + "..." : p.getDescription() %></p>
+                        <p class="project-desc">
+                            <%= (p.getDescription() != null && p.getDescription().length() > 80) ? p.getDescription().substring(0, 77) + "..." : p.getDescription() %>
+                        </p>
                         
                         <div class="mb-3">
                             <div class="flex-between text-sm mb-1">
-                                <span>Progress</span>
-                                <span class="fw-600">65%</span>
+                                <span>Tasks</span>
+                                <span class="fw-600"><%= p.getTaskCount() %></span>
                             </div>
-                            <div class="progress"><div class="progress-bar" style="width: 65%"></div></div>
+                            <div class="progress"><div class="progress-bar" style="width: 100%"></div></div>
                         </div>
 
                         <div class="project-meta">
                             <span>📅 <%= p.getEndDate() %></span>
-                            <span>✓ <%= p.getTaskCount() %> Tasks</span>
                             <span>👤 <%= p.getCreatorName() %></span>
                         </div>
                     </a>

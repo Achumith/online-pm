@@ -3,10 +3,18 @@
 <%
     List<Project> projects = (List<Project>) request.getAttribute("projects");
     List<Task> tasks = (List<Task>) request.getAttribute("tasks");
-    int activeProjects = 0;
-    int completedTasks = 0;
-    if(projects != null) for(Project p : projects) if(!"Completed".equals(p.getStatus())) activeProjects++;
-    if(tasks != null) for(Task t : tasks) if("Completed".equals(t.getStatus())) completedTasks++;
+    List<User> allUsers = (List<User>) request.getAttribute("allUsers");
+    
+    long activeProjects = 0;
+    long completedTasks = 0;
+    
+    if (projects != null) {
+        activeProjects = projects.stream().filter(p -> !"Completed".equalsIgnoreCase(p.getStatus())).count();
+    }
+    
+    if (tasks != null) {
+        completedTasks = tasks.stream().filter(t -> "Completed".equalsIgnoreCase(t.getStatus()) || "Done".equalsIgnoreCase(t.getStatus())).count();
+    }
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -45,7 +53,7 @@
                     <div class="stat-card c-green">
                         <div class="stat-label">Tasks Completed</div>
                         <div class="stat-value"><%= completedTasks %></div>
-                        <div class="stat-sub">This month</div>
+                        <div class="stat-sub">Overall progress</div>
                     </div>
                     <div class="stat-card c-yellow">
                         <div class="stat-label">Pending Tasks</div>
@@ -54,7 +62,7 @@
                     </div>
                     <div class="stat-card c-pink">
                         <div class="stat-label">Total Users</div>
-                        <div class="stat-value"><%= request.getAttribute("allUsers") != null ? ((List)request.getAttribute("allUsers")).size() : 0 %></div>
+                        <div class="stat-value"><%= allUsers != null ? allUsers.size() : 0 %></div>
                         <div class="stat-sub">In the system</div>
                     </div>
                 </div>
@@ -87,7 +95,7 @@
                                             <div class="fw-600"><%= p.getTitle() %></div>
                                             <div class="text-muted text-sm"><%= p.getStartDate() %></div>
                                         </td>
-                                        <td><span class="badge badge-<%= p.getStatus().toLowerCase().replace(" ", "_") %>"><%= p.getStatus() %></span></td>
+                                        <td><span class="badge badge-<%= p.getStatus() != null ? p.getStatus().toLowerCase().replace(" ", "_") : "unknown" %>"><%= p.getStatus() %></span></td>
                                         <td><%= p.getTaskCount() %></td>
                                     </tr>
                                     <% 
@@ -120,7 +128,7 @@
                                     if(tasks != null && !tasks.isEmpty()) {
                                         int count = 0;
                                         for(Task t : tasks) {
-                                            if("Completed".equals(t.getStatus())) continue;
+                                            if("Completed".equalsIgnoreCase(t.getStatus()) || "Done".equalsIgnoreCase(t.getStatus())) continue;
                                             if(count++ >= 5) break;
                                     %>
                                     <tr>
@@ -129,7 +137,7 @@
                                             <div class="text-muted text-sm"><%= t.getAssigneeName() %></div>
                                         </td>
                                         <td><div class="text-sm"><%= t.getProjectTitle() %></div></td>
-                                        <td><span class="badge badge-<%= t.getPriority().toLowerCase() %>"><%= t.getPriority() %></span></td>
+                                        <td><span class="badge badge-<%= t.getPriority() != null ? t.getPriority().toLowerCase() : "medium" %>"><%= t.getPriority() %></span></td>
                                     </tr>
                                     <% 
                                         }

@@ -3,7 +3,8 @@ package com.pms.dao;
 import com.pms.model.Meeting;
 import com.pms.util.DBConnection;
 import java.sql.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MeetingDAO {
 
@@ -18,7 +19,9 @@ public class MeetingDAO {
         try (Connection c = DBConnection.getConnection();
              Statement st = c.createStatement();
              ResultSet rs = st.executeQuery(BASE + "ORDER BY m.meeting_date DESC")) {
-            while (rs.next()) list.add(map(rs));
+            while (rs.next()) {
+                list.add(map(rs));
+            }
         }
         return list;
     }
@@ -26,26 +29,28 @@ public class MeetingDAO {
     public List<Meeting> getByProject(int pid) throws SQLException {
         List<Meeting> list = new ArrayList<>();
         try (Connection c = DBConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(
-                     BASE + "WHERE m.project_id=? ORDER BY m.meeting_date DESC")) {
+             PreparedStatement ps = c.prepareStatement(BASE + "WHERE m.project_id=? ORDER BY m.meeting_date DESC")) {
             ps.setInt(1, pid);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) list.add(map(rs));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs));
+                }
+            }
         }
         return list;
     }
 
     public boolean create(Meeting m) throws SQLException {
-        String sql = "INSERT INTO meetings(project_id,title,description,location,meeting_date,created_by)"
+        String sql = "INSERT INTO meetings(project_id, title, description, location, meeting_date, created_by)"
                    + " VALUES(?,?,?,?,?,?)";
         try (Connection c = DBConnection.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setInt(1,       m.getProjectId());
-            ps.setString(2,    m.getTitle());
-            ps.setString(3,    m.getDescription());
-            ps.setString(4,    m.getLocation());
+            ps.setInt(1, m.getProjectId());
+            ps.setString(2, m.getTitle());
+            ps.setString(3, m.getDescription());
+            ps.setString(4, m.getLocation());
             ps.setTimestamp(5, m.getMeetingDate());
-            ps.setInt(6,       m.getCreatedBy());
+            ps.setInt(6, m.getCreatedBy());
             return ps.executeUpdate() > 0;
         }
     }
@@ -67,8 +72,15 @@ public class MeetingDAO {
         m.setLocation(rs.getString("location"));
         m.setMeetingDate(rs.getTimestamp("meeting_date"));
         m.setCreatedBy(rs.getInt("created_by"));
-        try { m.setProjectTitle(rs.getString("project_title")); } catch (Exception ignored) {}
-        try { m.setCreatorName(rs.getString("creator_name")); }   catch (Exception ignored) {}
+        
+        try {
+            m.setProjectTitle(rs.getString("project_title"));
+        } catch (SQLException ignored) {}
+        
+        try {
+            m.setCreatorName(rs.getString("creator_name"));
+        } catch (SQLException ignored) {}
+        
         return m;
     }
 }

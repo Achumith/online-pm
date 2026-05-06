@@ -1,12 +1,20 @@
 package com.pms.servlet;
 
-import com.pms.dao.*;
-import jakarta.servlet.http.*;
+import com.pms.dao.ProjectDAO;
+import com.pms.dao.TaskDAO;
+import com.pms.dao.MeetingDAO;
+import com.pms.dao.UserDAO;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
-
 public class DashboardServlet extends HttpServlet {
-    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException {
+    
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException, ServletException {
         try {
             req.setAttribute("projects",  new ProjectDAO().getAllProjects());
             req.setAttribute("tasks",     new TaskDAO().getAll());
@@ -14,8 +22,7 @@ public class DashboardServlet extends HttpServlet {
             req.setAttribute("allUsers",  new UserDAO().getAllUsers());
             req.getRequestDispatcher("/pages/dashboard.jsp").forward(req, res);
         } catch (Exception e) {
-            System.err.println("Dashboard error: " + e.getMessage());
-            e.printStackTrace();
+            log("Dashboard error", e);
             res.sendRedirect(req.getContextPath() + "/login");
         }
     }

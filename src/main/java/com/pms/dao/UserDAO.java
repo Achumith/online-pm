@@ -3,7 +3,8 @@ package com.pms.dao;
 import com.pms.model.User;
 import com.pms.util.DBConnection;
 import java.sql.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserDAO {
 
@@ -13,14 +14,17 @@ public class UserDAO {
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, email);
             ps.setString(2, password);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) return map(rs);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return map(rs);
+                }
+            }
         }
         return null;
     }
 
     public boolean register(User u) throws SQLException {
-        String sql = "INSERT INTO users(name,email,password,role) VALUES(?,?,?,?)";
+        String sql = "INSERT INTO users(name, email, password, role) VALUES(?,?,?,?)";
         try (Connection c = DBConnection.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, u.getName());
@@ -35,7 +39,9 @@ public class UserDAO {
         try (Connection c = DBConnection.getConnection();
              PreparedStatement ps = c.prepareStatement("SELECT id FROM users WHERE email=?")) {
             ps.setString(1, email);
-            return ps.executeQuery().next();
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
         }
     }
 
@@ -44,7 +50,9 @@ public class UserDAO {
         try (Connection c = DBConnection.getConnection();
              Statement st = c.createStatement();
              ResultSet rs = st.executeQuery("SELECT * FROM users ORDER BY name")) {
-            while (rs.next()) list.add(map(rs));
+            while (rs.next()) {
+                list.add(map(rs));
+            }
         }
         return list;
     }
@@ -53,8 +61,11 @@ public class UserDAO {
         try (Connection c = DBConnection.getConnection();
              PreparedStatement ps = c.prepareStatement("SELECT * FROM users WHERE id=?")) {
             ps.setInt(1, id);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) return map(rs);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return map(rs);
+                }
+            }
         }
         return null;
     }

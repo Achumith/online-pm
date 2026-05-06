@@ -3,7 +3,8 @@ package com.pms.dao;
 import com.pms.model.Holiday;
 import com.pms.util.DBConnection;
 import java.sql.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class HolidayDAO {
 
@@ -11,8 +12,7 @@ public class HolidayDAO {
         List<Holiday> list = new ArrayList<>();
         try (Connection c = DBConnection.getConnection();
              Statement st = c.createStatement();
-             ResultSet rs = st.executeQuery(
-                     "SELECT * FROM holidays ORDER BY holiday_date")) {
+             ResultSet rs = st.executeQuery("SELECT * FROM holidays ORDER BY holiday_date")) {
             while (rs.next()) {
                 Holiday h = new Holiday();
                 h.setId(rs.getInt("id"));
@@ -27,10 +27,9 @@ public class HolidayDAO {
 
     public boolean create(Holiday h) throws SQLException {
         try (Connection c = DBConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(
-                     "INSERT INTO holidays(name,holiday_date,type) VALUES(?,?,?)")) {
+             PreparedStatement ps = c.prepareStatement("INSERT INTO holidays(name, holiday_date, type) VALUES(?,?,?)")) {
             ps.setString(1, h.getName());
-            ps.setDate(2,   h.getHolidayDate());
+            ps.setDate(2, h.getHolidayDate());
             ps.setString(3, h.getType());
             return ps.executeUpdate() > 0;
         }
@@ -38,8 +37,7 @@ public class HolidayDAO {
 
     public boolean delete(int id) throws SQLException {
         try (Connection c = DBConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(
-                     "DELETE FROM holidays WHERE id=?")) {
+             PreparedStatement ps = c.prepareStatement("DELETE FROM holidays WHERE id=?")) {
             ps.setInt(1, id);
             return ps.executeUpdate() > 0;
         }

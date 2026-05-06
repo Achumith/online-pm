@@ -1,7 +1,43 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="com.pms.model.*, java.util.*" %>
-<%
-    List<Project> projects = (List<Project>) request.getAttribute("projects");
+<% 
+    // Defensive data retrieval
+    Object projectsObj = request.getAttribute("projects");
+    List<Project> projects = null;
+    if (projectsObj instanceof List) {
+        projects = (List<Project>) projectsObj;
+    } else {
+        projects = new ArrayList<Project>();
+    }
+
+    Object countsObj = request.getAttribute("statusCounts");
+    Map<String, Integer> statusCounts = null;
+    if (countsObj instanceof Map) {
+        statusCounts = (Map<String, Integer>) countsObj;
+    } else {
+        statusCounts = new HashMap<String, Integer>();
+    }
+
+    // Prepare JSON strings for data attributes (using double quotes for JSON compatibility)
+    StringBuilder labelsSb = new StringBuilder("[");
+    StringBuilder dataSb = new StringBuilder("[");
+    if (statusCounts != null && !statusCounts.isEmpty()) {
+        boolean first = true;
+        for (Map.Entry<String, Integer> entry : statusCounts.entrySet()) {
+            if (!first) {
+                labelsSb.append(",");
+                dataSb.append(",");
+            }
+            String key = entry.getKey() != null ? entry.getKey().replace("\"", "\\\"") : "Unknown";
+            labelsSb.append("\"").append(key).append("\"");
+            dataSb.append(entry.getValue());
+            first = false;
+        }
+    }
+    labelsSb.append("]");
+    dataSb.append("]");
+    String labelsJson = labelsSb.toString();
+    String dataJson = dataSb.toString();
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -14,7 +50,7 @@
 <body>
     <div class="layout">
         <jsp:include page="navbar.jsp" />
-        
+
         <main class="main">
             <header class="topbar">
                 <div class="topbar-title">Reports</div>
@@ -37,10 +73,15 @@
                             <h3 class="card-title">Project Status Distribution</h3>
                         </div>
                         <div style="height: 250px; display: flex; align-items: center; justify-content: center;">
+                            <!-- Hidden data element for JavaScript -->
+                            <div id="chartData" 
+                                 data-labels='<%= labelsJson %>' 
+                                 data-values='<%= dataJson %>' 
+                                 style="display:none;"></div>
                             <canvas id="statusChart"></canvas>
                         </div>
                     </div>
-                    
+
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">Summary Metrics</h3>
@@ -48,16 +89,22 @@
                         <div class="stat-grid" style="grid-template-columns: 1fr; gap: 12px;">
                             <div class="stat-card c-blue" style="padding: 12px 16px;">
                                 <div class="stat-label">Total Projects</div>
-                                <div class="stat-value" style="font-size: 1.5rem;"><%= projects != null ? projects.size() : 0 %></div>
+                                <div class="stat-value" style="font-size: 1.5rem;">
+                                    <%= projects.size() %>
+                                </div>
                             </div>
                             <div class="stat-card c-green" style="padding: 12px 16px;">
                                 <div class="stat-label">Active Projects</div>
                                 <div class="stat-value" style="font-size: 1.5rem;">
                                     <% 
-                                    long active = 0;
-                                    if(projects != null) active = projects.stream().filter(p -> !"Completed".equals(p.getStatus())).count();
+                                        int activeCount = 0; 
+                                        for(Project p : projects) {
+                                            if(p.getStatus() != null && !"Completed".equalsIgnoreCase(p.getStatus())) {
+                                                activeCount++;
+                                            }
+                                        }
                                     %>
-                                    <%= active %>
+                                    <%= activeCount %>
                                 </div>
                             </div>
                         </div>
@@ -74,35 +121,33 @@
                                 <tr>
                                     <th>Project</th>
                                     <th>Status</th>
-                                    <th>Progress</th>
                                     <th>Tasks</th>
-                                    <th>Created At</th>
+                                    <th>Start Date</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <% 
-                                if(projects != null && !projects.isEmpty()) {
+                                if(!projects.isEmpty()) { 
                                     for(Project p : projects) { 
+                                        String status = p.getStatus() != null ? p.getStatus() : "Unknown";
+                                        String statusClass = status.toLowerCase().replace(" ", "_");
                                 %>
-                                <tr>
-                                    <td>
-                                        <div class="fw-600"><%= p.getTitle() %></div>
-                                        <div class="text-xs text-muted">ID: #<%= p.getId() %></div>
-                                    </td>
-                                    <td><span class="badge badge-<%= p.getStatus().toLowerCase().replace(" ", "_") %>"><%= p.getStatus() %></span></td>
-                                    <td>
-                                        <div class="flex items-center gap-3">
-                                            <div class="progress" style="width: 80px;"><div class="progress-bar" style="width: 65%"></div></div>
-                                            <span class="text-sm">65%</span>
-                                        </div>
-                                    </td>
-                                    <td><%= p.getTaskCount() %></td>
-                                    <td class="text-sm"><%= p.getStartDate() %></td>
-                                </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="fw-600"><%= p.getTitle() != null ? p.getTitle() : "Untitled" %></div>
+                                            <div class="text-xs text-muted">ID: #<%= p.getId() %></div>
+                                        </td>
+                                        <td><span class="badge badge-<%= statusClass %>"><%= status %></span></td>
+                                        <td><%= p.getTaskCount() %></td>
+                                        <td class="text-sm"><%= p.getStartDate() != null ? p.getStartDate().toString() : "N/A" %></td>
+                                    </tr>
                                 <% 
-                                    }
-                                } else { %>
-                                <tr><td colspan="5" class="text-center text-muted">No data available</td></tr>
+                                    } 
+                                } else { 
+                                %>
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">No data available</td>
+                                    </tr>
                                 <% } %>
                             </tbody>
                         </table>
@@ -112,32 +157,36 @@
 
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
             <script>
-                document.addEventListener('DOMContentLoaded', function() {
+                document.addEventListener('DOMContentLoaded', function () {
                     const ctx = document.getElementById('statusChart').getContext('2d');
-                    <%
-                    Map<String, Integer> counts = (Map<String, Integer>) request.getAttribute("statusCounts");
-                    StringBuilder labels = new StringBuilder("[");
-                    StringBuilder data = new StringBuilder("[");
-                    if (counts != null) {
-                        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
-                            labels.append("'").append(entry.getKey()).append("',");
-                            data.append(entry.getValue()).append(",");
-                        }
-                    }
-                    if (labels.length() > 1) {
-                        labels.setLength(labels.length() - 1);
-                        data.setLength(data.length() - 1);
-                    }
-                    labels.append("]");
-                    data.append("]");
-                    %>
+                    const dataEl = document.getElementById('chartData');
                     
+                    if (!dataEl) return;
+
+                    let labels = [];
+                    let data = [];
+
+                    try {
+                        labels = JSON.parse(dataEl.dataset.labels);
+                        data = JSON.parse(dataEl.dataset.values);
+                    } catch (e) {
+                        console.error("Error parsing chart data", e);
+                    }
+
+                    if (!labels || labels.length === 0) {
+                        ctx.font = "14px DM Sans";
+                        ctx.fillStyle = "#8b91a8";
+                        ctx.textAlign = "center";
+                        ctx.fillText("No status data available", ctx.canvas.width/2, ctx.canvas.height/2);
+                        return;
+                    }
+
                     new Chart(ctx, {
                         type: 'doughnut',
                         data: {
-                            labels: <%= labels.toString() %>,
+                            labels: labels,
                             datasets: [{
-                                data: <%= data.toString() %>,
+                                data: data,
                                 backgroundColor: ['#4f7cff', '#2dd4bf', '#fbbf24', '#f87171', '#e879f9', '#fb923c'],
                                 borderWidth: 0,
                                 hoverOffset: 10

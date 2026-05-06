@@ -3,7 +3,8 @@ package com.pms.dao;
 import com.pms.model.Task;
 import com.pms.util.DBConnection;
 import java.sql.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TaskDAO {
 
@@ -18,7 +19,9 @@ public class TaskDAO {
         try (Connection c = DBConnection.getConnection();
              Statement st = c.createStatement();
              ResultSet rs = st.executeQuery(BASE + "ORDER BY t.created_at DESC")) {
-            while (rs.next()) list.add(map(rs));
+            while (rs.next()) {
+                list.add(map(rs));
+            }
         }
         return list;
     }
@@ -26,11 +29,13 @@ public class TaskDAO {
     public List<Task> getByProject(int projectId) throws SQLException {
         List<Task> list = new ArrayList<>();
         try (Connection c = DBConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(
-                     BASE + "WHERE t.project_id=? ORDER BY t.created_at DESC")) {
+             PreparedStatement ps = c.prepareStatement(BASE + "WHERE t.project_id=? ORDER BY t.created_at DESC")) {
             ps.setInt(1, projectId);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) list.add(map(rs));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs));
+                }
+            }
         }
         return list;
     }
@@ -39,44 +44,48 @@ public class TaskDAO {
         try (Connection c = DBConnection.getConnection();
              PreparedStatement ps = c.prepareStatement(BASE + "WHERE t.id=?")) {
             ps.setInt(1, id);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) return map(rs);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return map(rs);
+                }
+            }
         }
         return null;
     }
 
     public int create(Task t) throws SQLException {
-        String sql = "INSERT INTO tasks(project_id,title,description,assigned_to,"
-                   + "start_date,end_date,status,priority) VALUES(?,?,?,?,?,?,?,?)";
+        String sql = "INSERT INTO tasks(project_id, title, description, assigned_to, "
+                   + "start_date, end_date, status, priority) VALUES(?,?,?,?,?,?,?,?)";
         try (Connection c = DBConnection.getConnection();
              PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setInt(1,    t.getProjectId());
+            ps.setInt(1, t.getProjectId());
             ps.setString(2, t.getTitle());
             ps.setString(3, t.getDescription());
-            ps.setInt(4,    t.getAssignedTo());
-            ps.setDate(5,   t.getStartDate());
-            ps.setDate(6,   t.getEndDate());
-            ps.setString(7, t.getStatus()   != null ? t.getStatus()   : "todo");
+            ps.setInt(4, t.getAssignedTo());
+            ps.setDate(5, t.getStartDate());
+            ps.setDate(6, t.getEndDate());
+            ps.setString(7, t.getStatus() != null ? t.getStatus() : "todo");
             ps.setString(8, t.getPriority() != null ? t.getPriority() : "medium");
             ps.executeUpdate();
-            ResultSet k = ps.getGeneratedKeys();
-            return k.next() ? k.getInt(1) : -1;
+            try (ResultSet k = ps.getGeneratedKeys()) {
+                return k.next() ? k.getInt(1) : -1;
+            }
         }
     }
 
     public boolean update(Task t) throws SQLException {
-        String sql = "UPDATE tasks SET title=?,description=?,assigned_to=?,"
-                   + "start_date=?,end_date=?,status=?,priority=? WHERE id=?";
+        String sql = "UPDATE tasks SET title=?, description=?, assigned_to=?, "
+                   + "start_date=?, end_date=?, status=?, priority=? WHERE id=?";
         try (Connection c = DBConnection.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, t.getTitle());
             ps.setString(2, t.getDescription());
-            ps.setInt(3,    t.getAssignedTo());
-            ps.setDate(4,   t.getStartDate());
-            ps.setDate(5,   t.getEndDate());
+            ps.setInt(3, t.getAssignedTo());
+            ps.setDate(4, t.getStartDate());
+            ps.setDate(5, t.getEndDate());
             ps.setString(6, t.getStatus());
             ps.setString(7, t.getPriority());
-            ps.setInt(8,    t.getId());
+            ps.setInt(8, t.getId());
             return ps.executeUpdate() > 0;
         }
     }
@@ -91,11 +100,11 @@ public class TaskDAO {
 
     public int countByStatus(String status) throws SQLException {
         try (Connection c = DBConnection.getConnection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT COUNT(*) FROM tasks WHERE status=?")) {
+             PreparedStatement ps = c.prepareStatement("SELECT COUNT(*) FROM tasks WHERE status=?")) {
             ps.setString(1, status);
-            ResultSet rs = ps.executeQuery();
-            return rs.next() ? rs.getInt(1) : 0;
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
         }
     }
 
@@ -111,8 +120,16 @@ public class TaskDAO {
         t.setStartDate(rs.getDate("start_date"));
         t.setEndDate(rs.getDate("end_date"));
         t.setCreatedAt(rs.getTimestamp("created_at"));
-        try { t.setAssigneeName(rs.getString("assignee_name")); }  catch (Exception ignored) {}
-        try { t.setProjectTitle(rs.getString("project_title")); }  catch (Exception ignored) {}
+        
+        // Handling optional columns from joins
+        try {
+            t.setAssigneeName(rs.getString("assignee_name"));
+        } catch (SQLException ignored) {}
+        
+        try {
+            t.setProjectTitle(rs.getString("project_title"));
+        } catch (SQLException ignored) {}
+        
         return t;
     }
 }
